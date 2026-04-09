@@ -6,7 +6,7 @@ public static class CurrencyCodeUtility
 {
     public static string Normalize(string value, string paramName = "value")
     {
-        if (string.IsNullOrWhiteSpace(value))
+        if (string.IsNullOrWhiteSpace(value) || value.Trim().Length != 3)
         {
             throw new ArgumentException("Currency code must be a 3-letter ISO code.", paramName);
         }
