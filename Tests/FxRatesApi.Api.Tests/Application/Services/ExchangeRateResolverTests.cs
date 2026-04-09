@@ -309,7 +309,7 @@ public class ExchangeRateResolverTests
     }
 
     private static ExchangeRateResolver CreateResolver(
-        Infrastructure.Persistence.AppDbContext dbContext,
+        FxRatesApi.Api.Infrastructure.Persistence.AppDbContext dbContext,
         IEnumerable<IExchangeRateProvider> providers,
         FakeRateEventPublisher publisher,
         ExchangeRateLookupOptions options) =>
