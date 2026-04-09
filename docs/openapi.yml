@@ -1,0 +1,297 @@
+openapi: 3.0.3
+info:
+  title: FxRates API
+  description: |
+    API for managing and retrieving foreign exchange rates.
+
+    ## Contract-first usage
+    This file can be shared with other teams or clients **before development starts**, enabling them to:
+    - Generate typed client SDKs immediately (via NSwag or Kiota)
+    - Set up mock servers to begin integration work without a live API
+    - Write integration tests against the agreed interface in parallel with development
+
+    This decouples delivery timelines between teams and removes the need for a running server during early integration.
+    It can also be shared directly with external clients who want to call the API, so they understand
+    the contract without needing access to the source code.
+
+    ## Key behaviours
+    - `POST /rates` is an **upsert** — creates the pair if it does not exist (201), updates it if it does (200).
+    - `GET /rates/{from}/{to}` checks the database first. If the cached rate is fresh it is returned directly.
+      If it is stale or missing, the rate is fetched from AlphaVantage and persisted.
+      If AlphaVantage is unavailable and a stale rate exists in the database, the stale rate is returned as a fallback rather than erroring.
+    - All error responses share the same shape: `{ "message": "..." }`.
+
+  version: 1.0.0
+
+paths:
+  /rates:
+    get:
+      summary: List all exchange rates
+      description: Returns all stored currency pairs ordered by base currency then quote currency. Returns an empty array (not 404) when no rates exist.
+      operationId: getAllRates
+      responses:
+        '200':
+          description: List of exchange rates.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExchangeRate'
+              example:
+                - id: 1
+                  baseCurrency: EUR
+                  quoteCurrency: USD
+                  bid: 1.0812
+                  ask: 1.0830
+                  provider: AlphaVantage
+                  retrievedAtUtc: '2026-04-09T10:30:00Z'
+
+    post:
+      summary: Create or update an exchange rate (upsert)
+      description: |
+        **Upsert semantics:**
+        - If the currency pair does **not** exist → creates it and returns **201 Created** with a `Location` header.
+        - If the currency pair already exists → overwrites it and returns **200 OK**.
+
+        An `ExchangeRateCreated` event is published only on insert, not on update.
+      operationId: upsertRate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertExchangeRateRequest'
+            example:
+              baseCurrency: USD
+              quoteCurrency: EUR
+              bid: 0.9123
+              ask: 0.9145
+              provider: Manual
+      responses:
+        '201':
+          description: Rate created successfully.
+          headers:
+            Location:
+              description: URL of the newly created rate (e.g. /rates/USD/EUR).
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExchangeRate'
+        '200':
+          description: Existing rate updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExchangeRate'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /rates/{baseCurrency}/{quoteCurrency}:
+    parameters:
+      - name: baseCurrency
+        in: path
+        required: true
+        description: ISO 4217 base currency code (e.g. USD).
+        schema:
+          type: string
+          minLength: 3
+          maxLength: 3
+        example: USD
+      - name: quoteCurrency
+        in: path
+        required: true
+        description: ISO 4217 quote currency code (e.g. EUR).
+        schema:
+          type: string
+          minLength: 3
+          maxLength: 3
+        example: EUR
+
+    get:
+      summary: Get the current rate for a currency pair
+      description: |
+        Returns the current bid/ask for the given pair.
+
+        **Lookup order (fallback strategy):**
+        1. If a fresh DB rate exists (within the configured TTL, default 15 min) → returned immediately, no provider call.
+        2. If stale or missing → AlphaVantage is called and the result is persisted.
+        3. If AlphaVantage fails and a stale rate exists in DB → stale rate returned as a fallback (no error).
+        4. If no rate is available anywhere → 404.
+
+        A 200 response may therefore contain a stale rate when the provider is temporarily unavailable.
+      operationId: getRateByPair
+      responses:
+        '200':
+          description: Current exchange rate. May be a stale fallback if the provider was unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExchangeRate'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+    put:
+      summary: Update an existing exchange rate
+      description: Updates the bid, ask, and optionally the provider of an existing pair. Stamps `retrievedAtUtc` with the current UTC time.
+      operationId: updateRate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateExchangeRateRequest'
+            example:
+              bid: 0.9200
+              ask: 0.9220
+              provider: Manual
+      responses:
+        '200':
+          description: Rate updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExchangeRate'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Delete an exchange rate
+      description: Permanently removes the currency pair from the database.
+      operationId: deleteRate
+      responses:
+        '204':
+          description: Rate deleted successfully.
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  schemas:
+    ExchangeRate:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          example: 1
+        baseCurrency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: USD
+        quoteCurrency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: EUR
+        bid:
+          type: number
+          format: decimal
+          example: 0.9123
+        ask:
+          type: number
+          format: decimal
+          example: 0.9145
+        provider:
+          type: string
+          example: AlphaVantage
+        retrievedAtUtc:
+          type: string
+          format: date-time
+          example: '2026-04-09T10:30:00Z'
+
+    UpsertExchangeRateRequest:
+      type: object
+      required:
+        - baseCurrency
+        - quoteCurrency
+        - bid
+        - ask
+      properties:
+        baseCurrency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: USD
+        quoteCurrency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: EUR
+        bid:
+          type: number
+          format: decimal
+          minimum: 0
+          example: 0.9123
+        ask:
+          type: number
+          format: decimal
+          minimum: 0
+          example: 0.9145
+        provider:
+          type: string
+          maxLength: 100
+          default: Manual
+          example: Manual
+
+    UpdateExchangeRateRequest:
+      type: object
+      required:
+        - bid
+        - ask
+      properties:
+        bid:
+          type: number
+          format: decimal
+          minimum: 0
+          example: 0.9123
+        ask:
+          type: number
+          format: decimal
+          minimum: 0
+          example: 0.9145
+        provider:
+          type: string
+          maxLength: 100
+          example: Manual
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Rate for USD/XYZ was not found.
+
+  responses:
+    BadRequest:
+      description: Invalid input — unsupported currency code or validation error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: "Currency code 'XYZ' is not supported."
+    NotFound:
+      description: The requested currency pair was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: "Rate for USD/XYZ was not found."
+    ServiceUnavailable:
+      description: The external rate provider is unavailable and no cached rate exists in the database.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: "An upstream service is temporarily unavailable."
