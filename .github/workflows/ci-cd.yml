@@ -1,0 +1,57 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore FxRatesApi.Api.sln
+
+      - name: Build
+        run: dotnet build FxRatesApi.Api.sln --no-restore --configuration Release
+
+      - name: Run unit tests
+        run: dotnet test Tests/FxRatesApi.Api.Tests/FxRatesApi.Api.Tests.csproj --no-build --configuration Release --verbosity normal
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish application
+        run: dotnet publish FxRatesApi.Api.csproj --configuration Release --output ./publish
+
+      - name: Deploy (dummy step)
+        run: |
+          echo "Deploying FxRatesApi to production..."
+          echo "Published artifacts:"
+          ls ./publish
+          echo "Deployment complete."
+        # Replace this step with a real deployment action, for example:
+        # - Azure Web Apps:  uses: azure/webapps-deploy@v3
+        # - AWS Elastic Beanstalk: uses: einaregilsson/beanstalk-deploy@v22
+        # - Docker + registry push: docker build & docker push
