@@ -28,6 +28,12 @@ jobs:
       - name: Run unit tests
         run: dotnet test Tests/FxRatesApi.Api.Tests/FxRatesApi.Api.Tests.csproj --no-build --configuration Release --verbosity normal
 
+      - name: Run mutation tests (Stryker.NET)
+        run: |
+          dotnet tool install --global dotnet-stryker
+          cd Tests/FxRatesApi.Api.Tests
+          dotnet-stryker --reporter progress
+
   deploy:
     name: Deploy
     runs-on: ubuntu-latest

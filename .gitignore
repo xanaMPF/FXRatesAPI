@@ -9,6 +9,9 @@ obj/
 ## Secrets / environment
 *.env
 
+## Stryker mutation testing output
+StrykerOutput/
+
 ## OS
 .DS_Store
 Thumbs.db
