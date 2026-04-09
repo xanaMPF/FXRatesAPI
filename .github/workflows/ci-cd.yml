@@ -31,8 +31,7 @@ jobs:
       - name: Run mutation tests (Stryker.NET)
         run: |
           dotnet tool install --global dotnet-stryker
-          cd Tests/FxRatesApi.Api.Tests
-          dotnet-stryker --reporter progress
+          dotnet-stryker --config-file Tests/FxRatesApi.Api.Tests/stryker-config.json
 
   deploy:
     name: Deploy
