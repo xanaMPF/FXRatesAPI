@@ -1,6 +1,7 @@
 using FxRatesApi.Api.Domain.Constants;
 using FxRatesApi.Api.Domain.Exceptions;
 using FxRatesApi.Api.Infrastructure.Providers.AlphaVantage;
+using Microsoft.Extensions.Time.Testing;
 
 namespace FxRatesApi.Api.Tests.Infrastructure.Providers.AlphaVantage;
 
@@ -171,13 +172,15 @@ public class AlphaVantageExchangeRateMapperTests
     [Fact]
     public void Map_FallsBackToUtcNow_WhenLastRefreshedIsUnparseable()
     {
-        var before = DateTime.UtcNow;
+        var fakeTime = new FakeTimeProvider();
+        var frozenNow = new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.Zero);
+        fakeTime.SetUtcNow(frozenNow);
+
         var response = ValidResponse(lastRefreshed: "not-a-date");
 
-        var result = AlphaVantageExchangeRateMapper.Map(response, "USD", "EUR");
-        var after = DateTime.UtcNow;
+        var result = AlphaVantageExchangeRateMapper.Map(response, "USD", "EUR", fakeTime);
 
         Assert.NotNull(result);
-        Assert.InRange(result.RetrievedAtUtc, before, after);
+        Assert.Equal(frozenNow.UtcDateTime, result.RetrievedAtUtc);
     }
 }

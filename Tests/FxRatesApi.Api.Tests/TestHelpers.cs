@@ -3,6 +3,7 @@ using FxRatesApi.Api.Application.Services;
 using FxRatesApi.Api.Domain.Models;
 using FxRatesApi.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Time.Testing;
 
 namespace FxRatesApi.Api.Tests;
 

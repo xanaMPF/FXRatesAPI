@@ -11,11 +11,13 @@ namespace FxRatesApi.Api.Application.Services;
 public class ExchangeRateService(
     AppDbContext dbContext,
     IExchangeRateResolver exchangeRateResolver,
-    IRateEventPublisher rateEventPublisher) : IExchangeRateService
+    IRateEventPublisher rateEventPublisher,
+    TimeProvider timeProvider) : IExchangeRateService
 {
     private readonly AppDbContext _dbContext = dbContext;
     private readonly IExchangeRateResolver _exchangeRateResolver = exchangeRateResolver;
     private readonly IRateEventPublisher _rateEventPublisher = rateEventPublisher;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public Task<List<ExchangeRate>> GetAllAsync(CancellationToken cancellationToken = default) =>
         _dbContext.ExchangeRates
@@ -60,7 +62,7 @@ public class ExchangeRateService(
         entity.Bid = request.Bid;
         entity.Ask = request.Ask;
         entity.Provider = NormalizeProvider(request.Provider, entity.Provider);
-        entity.RetrievedAtUtc = DateTime.UtcNow;
+        entity.RetrievedAtUtc = _timeProvider.GetUtcNow().UtcDateTime;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -105,7 +107,7 @@ public class ExchangeRateService(
         entity.Bid = bid;
         entity.Ask = ask;
         entity.Provider = NormalizeProvider(provider);
-        entity.RetrievedAtUtc = DateTime.UtcNow;
+        entity.RetrievedAtUtc = _timeProvider.GetUtcNow().UtcDateTime;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

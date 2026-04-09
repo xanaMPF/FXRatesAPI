@@ -1,6 +1,7 @@
 using FxRatesApi.Api.Application.Dtos;
 using FxRatesApi.Api.Application.Services;
 using FxRatesApi.Api.Domain.Models;
+using Microsoft.Extensions.Time.Testing;
 
 namespace FxRatesApi.Api.Tests.Application.Services;
 
@@ -12,7 +13,7 @@ public class ExchangeRateServiceTests
         await using var dbContext = TestHelpers.CreateDbContext();
         var resolver = new FakeExchangeRateResolver();
         var publisher = new FakeRateEventPublisher();
-        var service = new ExchangeRateService(dbContext, resolver, publisher);
+        var service = new ExchangeRateService(dbContext, resolver, publisher, TimeProvider.System);
 
         var result = await service.UpsertAsync(new UpsertExchangeRateRequest
         {
@@ -38,7 +39,7 @@ public class ExchangeRateServiceTests
     {
         await using var dbContext = TestHelpers.CreateDbContext();
         var publisher = new FakeRateEventPublisher();
-        var service = new ExchangeRateService(dbContext, new FakeExchangeRateResolver(), publisher);
+        var service = new ExchangeRateService(dbContext, new FakeExchangeRateResolver(), publisher, TimeProvider.System);
 
         await service.UpsertAsync(new UpsertExchangeRateRequest
         {
@@ -72,7 +73,7 @@ public class ExchangeRateServiceTests
 
         var resolver = new FakeExchangeRateResolver();
         var publisher = new FakeRateEventPublisher();
-        var service = new ExchangeRateService(dbContext, resolver, publisher);
+        var service = new ExchangeRateService(dbContext, resolver, publisher, TimeProvider.System);
 
         var result = await service.UpsertAsync(new UpsertExchangeRateRequest
         {
@@ -94,7 +95,7 @@ public class ExchangeRateServiceTests
     public async Task UpsertAsync_UsesManualProvider_WhenProviderIsNull()
     {
         await using var dbContext = TestHelpers.CreateDbContext();
-        var service = new ExchangeRateService(dbContext, new FakeExchangeRateResolver(), new FakeRateEventPublisher());
+        var service = new ExchangeRateService(dbContext, new FakeExchangeRateResolver(), new FakeRateEventPublisher(), TimeProvider.System);
 
         var result = await service.UpsertAsync(new UpsertExchangeRateRequest
         {
@@ -119,7 +120,7 @@ public class ExchangeRateServiceTests
         );
         await dbContext.SaveChangesAsync();
 
-        var service = new ExchangeRateService(dbContext, new FakeExchangeRateResolver(), new FakeRateEventPublisher());
+        var service = new ExchangeRateService(dbContext, new FakeExchangeRateResolver(), new FakeRateEventPublisher(), TimeProvider.System);
         var result = await service.GetAllAsync();
 
         Assert.Equal(3, result.Count);
@@ -136,7 +137,7 @@ public class ExchangeRateServiceTests
         await using var dbContext = TestHelpers.CreateDbContext();
         var resolver = new FakeExchangeRateResolver();
         var publisher = new FakeRateEventPublisher();
-        var service = new ExchangeRateService(dbContext, resolver, publisher);
+        var service = new ExchangeRateService(dbContext, resolver, publisher, TimeProvider.System);
 
         _ = await service.GetCurrentAsync("usd", "eur");
 
@@ -148,7 +149,7 @@ public class ExchangeRateServiceTests
     public async Task UpdateAsync_ReturnsNull_WhenPairDoesNotExist()
     {
         await using var dbContext = TestHelpers.CreateDbContext();
-        var service = new ExchangeRateService(dbContext, new FakeExchangeRateResolver(), new FakeRateEventPublisher());
+        var service = new ExchangeRateService(dbContext, new FakeExchangeRateResolver(), new FakeRateEventPublisher(), TimeProvider.System);
 
         var result = await service.UpdateAsync("USD", "EUR", new UpdateExchangeRateRequest
         {
@@ -174,7 +175,7 @@ public class ExchangeRateServiceTests
         });
         await dbContext.SaveChangesAsync();
 
-        var service = new ExchangeRateService(dbContext, new FakeExchangeRateResolver(), new FakeRateEventPublisher());
+        var service = new ExchangeRateService(dbContext, new FakeExchangeRateResolver(), new FakeRateEventPublisher(), TimeProvider.System);
 
         var result = await service.UpdateAsync("USD", "EUR", new UpdateExchangeRateRequest
         {
@@ -203,7 +204,7 @@ public class ExchangeRateServiceTests
         });
         await dbContext.SaveChangesAsync();
 
-        var service = new ExchangeRateService(dbContext, new FakeExchangeRateResolver(), new FakeRateEventPublisher());
+        var service = new ExchangeRateService(dbContext, new FakeExchangeRateResolver(), new FakeRateEventPublisher(), TimeProvider.System);
 
         var result = await service.UpdateAsync("USD", "EUR", new UpdateExchangeRateRequest
         {
@@ -229,7 +230,7 @@ public class ExchangeRateServiceTests
         });
         await dbContext.SaveChangesAsync();
 
-        var service = new ExchangeRateService(dbContext, new FakeExchangeRateResolver(), new FakeRateEventPublisher());
+        var service = new ExchangeRateService(dbContext, new FakeExchangeRateResolver(), new FakeRateEventPublisher(), TimeProvider.System);
 
         var deleted = await service.DeleteAsync("USD", "EUR");
 
@@ -241,10 +242,49 @@ public class ExchangeRateServiceTests
     public async Task DeleteAsync_ReturnsFalse_WhenPairDoesNotExist()
     {
         await using var dbContext = TestHelpers.CreateDbContext();
-        var service = new ExchangeRateService(dbContext, new FakeExchangeRateResolver(), new FakeRateEventPublisher());
+        var service = new ExchangeRateService(dbContext, new FakeExchangeRateResolver(), new FakeRateEventPublisher(), TimeProvider.System);
 
         var deleted = await service.DeleteAsync("USD", "EUR");
 
         Assert.False(deleted);
+    }
+
+    [Fact]
+    public async Task UpsertAsync_SetsRetrievedAtUtc_ToCurrentTime()
+    {
+        var fakeTime = new FakeTimeProvider();
+        var frozenNow = new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.Zero);
+        fakeTime.SetUtcNow(frozenNow);
+
+        await using var dbContext = TestHelpers.CreateDbContext();
+        var service = new ExchangeRateService(dbContext, new FakeExchangeRateResolver(), new FakeRateEventPublisher(), fakeTime);
+
+        var result = await service.UpsertAsync(new UpsertExchangeRateRequest
+        {
+            BaseCurrency = "USD", QuoteCurrency = "EUR", Bid = 1.0m, Ask = 1.1m
+        });
+
+        Assert.Equal(frozenNow.UtcDateTime, result.Rate.RetrievedAtUtc);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_SetsRetrievedAtUtc_ToCurrentTime()
+    {
+        var fakeTime = new FakeTimeProvider();
+        var frozenNow = new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.Zero);
+        fakeTime.SetUtcNow(frozenNow);
+
+        await using var dbContext = TestHelpers.CreateDbContext();
+        dbContext.ExchangeRates.Add(new ExchangeRate
+        {
+            BaseCurrency = "USD", QuoteCurrency = "EUR", Bid = 0.9m, Ask = 0.91m, Provider = "X"
+        });
+        await dbContext.SaveChangesAsync();
+
+        var service = new ExchangeRateService(dbContext, new FakeExchangeRateResolver(), new FakeRateEventPublisher(), fakeTime);
+
+        var result = await service.UpdateAsync("USD", "EUR", new UpdateExchangeRateRequest { Bid = 1.0m, Ask = 1.1m });
+
+        Assert.Equal(frozenNow.UtcDateTime, result!.RetrievedAtUtc);
     }
 }

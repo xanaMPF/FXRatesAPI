@@ -13,7 +13,8 @@ public class ExchangeRateResolver(
     IEnumerable<IExchangeRateProvider> exchangeRateProviders,
     IRateEventPublisher rateEventPublisher,
     IOptions<ExchangeRateLookupOptions> exchangeRateLookupOptions,
-    ILogger<ExchangeRateResolver> logger) : IExchangeRateResolver
+    ILogger<ExchangeRateResolver> logger,
+    TimeProvider timeProvider) : IExchangeRateResolver
 {
     private const string ProviderFailureLogMessage = "Exchange rate provider {ProviderType} failed for {BaseCurrency}/{QuoteCurrency}";
     private const string StaleFallbackLogMessage = "Returning stale database rate for {BaseCurrency}/{QuoteCurrency} because provider refresh failed.";
@@ -22,6 +23,7 @@ public class ExchangeRateResolver(
     private readonly IRateEventPublisher _rateEventPublisher = rateEventPublisher;
     private readonly ExchangeRateLookupOptions _exchangeRateLookupOptions = exchangeRateLookupOptions.Value;
     private readonly ILogger<ExchangeRateResolver> _logger = logger;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<ExchangeRateLookupResult> ResolveAsync(string baseCurrency, string quoteCurrency, CancellationToken cancellationToken = default)
     {
@@ -146,5 +148,5 @@ public class ExchangeRateResolver(
     }
 
     private bool IsStale(ExchangeRate rate) =>
-        DateTime.UtcNow - rate.RetrievedAtUtc >= _exchangeRateLookupOptions.StaleAfter;
+        _timeProvider.GetUtcNow().UtcDateTime - rate.RetrievedAtUtc >= _exchangeRateLookupOptions.StaleAfter;
 }

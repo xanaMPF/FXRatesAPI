@@ -8,7 +8,7 @@ namespace FxRatesApi.Api.Infrastructure.Providers.AlphaVantage;
 
 public static class AlphaVantageExchangeRateMapper
 {
-    public static ExchangeRate? Map(AlphaVantageExchangeRateResponse response, string baseCurrency, string quoteCurrency)
+    public static ExchangeRate? Map(AlphaVantageExchangeRateResponse response, string baseCurrency, string quoteCurrency, TimeProvider? timeProvider = null)
     {
         if (!string.IsNullOrWhiteSpace(response.Note))
         {
@@ -33,7 +33,7 @@ public static class AlphaVantageExchangeRateMapper
             Bid = Parse(ratePayload.BidPrice, AlphaVantageConstants.InvalidBidPriceMessage),
             Ask = Parse(ratePayload.AskPrice, AlphaVantageConstants.InvalidAskPriceMessage),
             Provider = ExchangeRateProviders.AlphaVantage,
-            RetrievedAtUtc = ParseRetrievedAtUtc(ratePayload.LastRefreshed)
+            RetrievedAtUtc = ParseRetrievedAtUtc(ratePayload.LastRefreshed, timeProvider)
         };
     }
 
@@ -47,12 +47,12 @@ public static class AlphaVantageExchangeRateMapper
         return parsedValue;
     }
 
-    private static DateTime ParseRetrievedAtUtc(string? rawValue) =>
+    private static DateTime ParseRetrievedAtUtc(string? rawValue, TimeProvider? timeProvider = null) =>
         DateTime.TryParse(
             rawValue,
             CultureInfo.InvariantCulture,
             DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
             out var parsedDate)
             ? parsedDate
-            : DateTime.UtcNow;
+            : (timeProvider ?? TimeProvider.System).GetUtcNow().UtcDateTime;
 }

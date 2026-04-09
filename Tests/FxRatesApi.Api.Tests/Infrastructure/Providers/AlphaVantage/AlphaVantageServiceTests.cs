@@ -5,6 +5,7 @@ using FxRatesApi.Api.Infrastructure.Configuration;
 using FxRatesApi.Api.Infrastructure.Providers.AlphaVantage;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Time.Testing;
 
 namespace FxRatesApi.Api.Tests.Infrastructure.Providers.AlphaVantage;
 
@@ -13,11 +14,12 @@ public class AlphaVantageServiceTests
     private static AlphaVantageService CreateService(
         HttpMessageHandler handler,
         string apiKey = "REAL_KEY",
-        string baseUrl = "https://www.alphavantage.co/query")
+        string baseUrl = "https://www.alphavantage.co/query",
+        TimeProvider? timeProvider = null)
     {
         var httpClient = new HttpClient(handler) { BaseAddress = null };
         var options = Options.Create(new AlphaVantageOptions { ApiKey = apiKey, BaseUrl = baseUrl });
-        return new AlphaVantageService(httpClient, options, NullLogger<AlphaVantageService>.Instance);
+        return new AlphaVantageService(httpClient, options, NullLogger<AlphaVantageService>.Instance, timeProvider ?? TimeProvider.System);
     }
 
     private static HttpMessageHandler JsonHandler(string json, HttpStatusCode statusCode = HttpStatusCode.OK) =>

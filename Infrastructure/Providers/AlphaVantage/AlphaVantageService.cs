@@ -12,13 +12,15 @@ namespace FxRatesApi.Api.Infrastructure.Providers.AlphaVantage;
 public class AlphaVantageService(
     HttpClient httpClient,
     IOptions<AlphaVantageOptions> options,
-    ILogger<AlphaVantageService> logger) : IExchangeRateProvider
+    ILogger<AlphaVantageService> logger,
+    TimeProvider timeProvider) : IExchangeRateProvider
 {
     private const string FetchRateLogMessage = "Fetching FX rate from Alpha Vantage for {BaseCurrency}/{QuoteCurrency}";
 
     private readonly HttpClient _httpClient = httpClient;
     private readonly AlphaVantageOptions _options = options.Value;
     private readonly ILogger<AlphaVantageService> _logger = logger;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<ExchangeRate?> GetExchangeRateAsync(string baseCurrency, string quoteCurrency, CancellationToken cancellationToken = default)
     {
@@ -32,7 +34,7 @@ public class AlphaVantageService(
         response.EnsureSuccessStatusCode();
 
         var providerResponse = await DeserializeResponseAsync(response, cancellationToken);
-        return AlphaVantageExchangeRateMapper.Map(providerResponse, baseCurrency, quoteCurrency);
+        return AlphaVantageExchangeRateMapper.Map(providerResponse, baseCurrency, quoteCurrency, _timeProvider);
     }
 
     private void EnsureApiKeyConfigured()

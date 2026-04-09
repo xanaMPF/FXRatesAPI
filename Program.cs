@@ -28,6 +28,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddHttpClient<IExchangeRateProvider, AlphaVantageService>();
 builder.Services.AddScoped<IExchangeRateResolver, ExchangeRateResolver>();
 builder.Services.AddScoped<IExchangeRateService, ExchangeRateService>();
