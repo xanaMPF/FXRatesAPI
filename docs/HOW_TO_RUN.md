@@ -2,6 +2,28 @@
 
 All commands are run from the repository root (`FxRatesApi.Api/`).
 
+## Quick start
+
+1. Open `appsettings.json` and replace the placeholder with your AlphaVantage API key:
+   ```json
+   "AlphaVantage": {
+     "ApiKey": "your_real_key_here"
+   }
+   ```
+   > **Never commit a real key.** For shared or production environments use an environment variable instead (see below).
+
+2. Run the API:
+   ```bash
+   dotnet run --project FxRatesApi.Api.csproj
+   ```
+
+3. Open Swagger UI in your browser:
+   ```
+   http://localhost:5126/swagger
+   ```
+
+---
+
 ## Prerequisites
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
@@ -38,7 +60,15 @@ Swagger UI is available at `/swagger`.
 
 ### Set the AlphaVantage API key
 
-The real API key must **never** be committed. Set it via environment variable before running:
+The simplest approach for local development is to put the key directly in `appsettings.json`:
+
+```json
+"AlphaVantage": {
+  "ApiKey": "your_real_key_here"
+}
+```
+
+> **Never commit a real key to source control.** For CI/CD or shared environments, set it via an environment variable instead:
 
 ```powershell
 # PowerShell
@@ -50,14 +80,6 @@ dotnet run --project FxRatesApi.Api.csproj
 # bash / zsh
 ALPHAVANTAGE_API_KEY=your_real_key_here dotnet run --project FxRatesApi.Api.csproj
 ```
-
-## Publish (production artefact)
-
-```bash
-dotnet publish FxRatesApi.Api.csproj --configuration Release --output ./publish
-```
-
----
 
 ## Run unit tests
 
@@ -89,19 +111,3 @@ dotnet-stryker --config-file Tests/FxRatesApi.Api.Tests/stryker-config.json
 
 The HTML report is written to `StrykerOutput/<timestamp>/reports/mutation-report.html`.
 Open it in a browser to see which mutants survived and where the test gaps are.
-
----
-
-## EF Core migrations
-
-Apply migrations / create the SQLite database:
-
-```bash
-dotnet ef database update --project FxRatesApi.Api.csproj
-```
-
-Add a new migration:
-
-```bash
-dotnet ef migrations add <MigrationName> --project FxRatesApi.Api.csproj
-```

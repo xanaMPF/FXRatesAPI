@@ -27,6 +27,8 @@ Supported currencies: `USD`, `EUR`, `GBP`, `JPY`, `CHF`, `CAD`, `AUD`, `NZD`, `C
 
 Invalid or unsupported codes are rejected early with HTTP 400, before any database or provider call is made.
 
+Same-currency pairs (e.g. `EUR/EUR`) are intentionally not blocked. AlphaVantage returns a valid response for them (a rate of 1.0), and there could be legitimate use cases for storing or querying them. Adding an explicit guard for this was left as a future decision rather than an assumption baked into the validation logic.
+
 > **TODO (production approach):** The hard-coded set is a simplification. In a production environment, supported currencies should be dynamic. A dedicated endpoint or an external configuration service would publish the list of valid codes, and the application would load them into a distributed cache such as **Redis** or a local **IMemoryCache** on startup (and refresh periodically). Validation would then query the cache rather than a hard-coded set, allowing operations to add or remove supported currencies without a code deployment.
 
 ---
