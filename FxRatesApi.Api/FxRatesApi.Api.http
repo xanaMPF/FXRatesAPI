@@ -1,0 +1,37 @@
+@FxRatesApi_Api_HostAddress = http://localhost:5126
+
+### Get all rates
+GET {{FxRatesApi_Api_HostAddress}}/rates
+Accept: application/json
+
+### Add or update a rate manually
+POST {{FxRatesApi_Api_HostAddress}}/rates
+Content-Type: application/json
+
+{
+  "baseCurrency": "USD",
+  "quoteCurrency": "EUR",
+  "bid": 0.9231,
+  "ask": 0.9238,
+  "provider": "Manual"
+}
+
+### Get by pair (returns cached rate, refreshes if stale or missing)
+GET {{FxRatesApi_Api_HostAddress}}/rates/USD/EUR
+Accept: application/json
+
+### Update an existing pair
+PUT {{FxRatesApi_Api_HostAddress}}/rates/USD/EUR
+Content-Type: application/json
+
+{
+  "bid": 0.9240,
+  "ask": 0.9247,
+  "provider": "Manual"
+}
+
+### Delete a pair
+DELETE {{FxRatesApi_Api_HostAddress}}/rates/USD/EUR
+Accept: application/json
+
+###

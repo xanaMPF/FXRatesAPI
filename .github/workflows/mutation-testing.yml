@@ -1,0 +1,53 @@
+name: Mutation Testing
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  mutation-testing:
+    name: Stryker (diff-based)
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history needed for --since diff
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install Stryker
+        run: dotnet tool install --global dotnet-stryker
+
+      - name: Restore dependencies
+        run: dotnet restore FxRatesApi.sln
+
+      - name: Run Stryker (changed files only)
+        # --since:main diffs HEAD against main and only mutates changed files.
+        # The config already sets break:0 so this step never fails the build.
+        run: |
+          cd FxRatesApi.Api
+          dotnet stryker --since:main
+        continue-on-error: true  # survivors are informational, never block merge
+
+      - name: Find mutation report
+        id: report
+        run: |
+          REPORT=$(find FxRatesApi.Api/Tests/FxRatesApi.Api.Tests/StrykerOutput -name "mutation-report.json" | sort | tail -n 1)
+          echo "path=$REPORT" >> "$GITHUB_OUTPUT"
+
+      - name: Post PR comment with survivors
+        if: steps.report.outputs.path != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPORT_PATH: ${{ steps.report.outputs.path }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: node .github/scripts/post-mutation-comment.js

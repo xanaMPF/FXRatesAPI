@@ -1,0 +1,17 @@
+## .NET / ASP.NET Core
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.log
+
+## Secrets / environment
+*.env
+
+## Stryker mutation testing output
+StrykerOutput/
+
+## OS
+.DS_Store
+Thumbs.db
