@@ -1,50 +1,40 @@
-# FxRatesApi
+# FxRatesApi.Api
 
-A .NET 8 ASP.NET Core Web API for CRUD operations on foreign exchange rates.
+ASP.NET Core 8 Web API for querying and managing foreign-exchange rates, backed by SQLite and the AlphaVantage provider.
 
-## Features
-- CRUD endpoints for currency pairs with `bid` and `ask` prices
-- SQLite persistence via EF Core
-- `GET /api/ExchangeRates/pair/{baseCurrency}/{quoteCurrency}` checks the database first
-- If missing, it fetches the rate from Alpha Vantage, stores it, and returns it
-- Bonus: a lightweight in-memory queue publishes an event whenever a new rate is added
+---
 
-## Tech stack
-- .NET 8
-- ASP.NET Core Web API
-- Entity Framework Core + SQLite
-- Swagger / OpenAPI
+## Submission Checklist
 
-## Configuration
-Update `FxRatesApi.Api/appsettings.json` with your Alpha Vantage API key:
+### Part 1 — .NET Core Web API
+This repository contains the implementation. Source code: **https://github.com/xanaMPF/FXRatesAPI**
 
-```json
-"AlphaVantage": {
-  "BaseUrl": "https://www.alphavantage.co/query",
-  "ApiKey": "YOUR_API_KEY_HERE"
-}
-```
+### Part 2 — Automated CI/CD Pipeline
+GitHub Actions pipeline is configured in `.github/workflows/ci-cd.yml`. It builds, runs unit tests, runs mutation tests (Stryker), and runs a dummy deploy step on every push to `main`.
 
-You can also use an environment variable:
+Pipeline runs: **https://github.com/xanaMPF/FXRatesAPI/actions**
 
-```powershell
-$env:ALPHAVANTAGE_API_KEY="your_key_here"
-```
+### Part 3 — Agile Methodologies
+User stories broken down into tasks with priorities and estimates on the GitHub Projects board: **https://github.com/users/xanaMPF/projects/3**
 
-## Run
-```powershell
-cd C:\Users\xanam\FxRatesApi\FxRatesApi.Api
-dotnet run
-```
+---
 
-Swagger UI will be available at:
-- `https://localhost:xxxx/swagger`
-- `http://localhost:xxxx/swagger`
+## Other Submission Requirements
 
-## Main endpoints
-- `GET /api/ExchangeRates`
-- `GET /api/ExchangeRates/{id}`
-- `GET /api/ExchangeRates/pair/USD/EUR`
-- `POST /api/ExchangeRates`
-- `PUT /api/ExchangeRates/{id}`
-- `DELETE /api/ExchangeRates/{id}`
+| Requirement | Status |
+|---|---|
+| Code repository | https://github.com/xanaMPF/FXRatesAPI |
+| Real deployment URL | Not deployed — dummy deploy step used in CI/CD pipeline |
+| Clean, well-structured code | Developed following Clean Code, SOLID principles and design patterns (see [Technical Considerations](docs/TECHNICAL_CONSIDERATIONS.md)) |
+| How to set up and run | [docs/HOW_TO_RUN.md](docs/HOW_TO_RUN.md) |
+| Error handling and logging | Global exception handling middleware with structured logging (see [Technical Considerations](docs/TECHNICAL_CONSIDERATIONS.md)) |
+| Unit tests | xUnit test suite with 63 tests, including mutation testing via Stryker.NET |
+| Self-review / design decisions | [docs/TECHNICAL_CONSIDERATIONS.md](docs/TECHNICAL_CONSIDERATIONS.md) |
+
+---
+
+## Documentation
+
+- [How to run](docs/HOW_TO_RUN.md) — build, run, test, and mutation testing commands
+- [Technical considerations](docs/TECHNICAL_CONSIDERATIONS.md) — architecture, design decisions, limitations, and possible improvements
+- [OpenAPI spec](docs/openapi.yml) — full API contract

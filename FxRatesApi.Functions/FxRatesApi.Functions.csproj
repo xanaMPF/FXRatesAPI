@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AzureFunctionsVersion>v4</AzureFunctionsVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.11.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="1.14.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.0.13" />
+    <!-- DurableTask extension removed from scaffold to keep the project buildable locally; add when ready to enable Durable Functions -->
+    <ProjectReference Include="..\FxRatesApi.Api.csproj" />
+  </ItemGroup>
+</Project>
