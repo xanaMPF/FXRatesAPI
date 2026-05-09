@@ -31,16 +31,17 @@ jobs:
 
       - name: Run Stryker (changed files only)
         # --since:main diffs HEAD against main and only mutates changed files.
+        # Run from the test project folder where stryker-config.json lives.
         # The config already sets break:0 so this step never fails the build.
         run: |
-          cd FxRatesApi.Api
-          dotnet stryker --since:main
+          cd FxRatesApi.Api/Tests/FxRatesApi.Api.Tests
+          dotnet stryker --since:origin/main
         continue-on-error: true  # survivors are informational, never block merge
 
       - name: Find mutation report
         id: report
         run: |
-          REPORT=$(find FxRatesApi.Api/Tests/FxRatesApi.Api.Tests/StrykerOutput -name "mutation-report.json" | sort | tail -n 1)
+          REPORT=$(find . -name "mutation-report.json" | sort | tail -n 1)
           echo "path=$REPORT" >> "$GITHUB_OUTPUT"
 
       - name: Post PR comment with survivors
