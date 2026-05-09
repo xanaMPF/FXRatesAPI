@@ -24,6 +24,7 @@ for (const [filePath, fileResult] of Object.entries(report.files || {})) {
         file: filePath,
         line: mutant.location?.start?.line ?? '?',
         mutatorName: mutant.mutatorName,
+        
         description: mutant.description,
         original: mutant.replacement ?? '',
       });

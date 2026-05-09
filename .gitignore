@@ -12,6 +12,14 @@ obj/
 ## Stryker mutation testing output
 StrykerOutput/
 
+## Database files
+*.db
+
+## Personal / CV documents
+cv_contents.md
+*.docx
+*.pdf
+
 ## OS
 .DS_Store
 Thumbs.db
