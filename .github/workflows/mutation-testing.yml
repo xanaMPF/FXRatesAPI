@@ -29,14 +29,27 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore FxRatesApi.sln
 
-      - name: Run Stryker (changed files only)
-        # --since:main diffs HEAD against main and only mutates changed files.
-        # Run from the test project folder where stryker-config.json lives.
-        # The config already sets break:0 so this step never fails the build.
+      - name: Compute changed source files
+        id: diff
         run: |
-          cd FxRatesApi.Api/Tests/FxRatesApi.Api.Tests
-          dotnet stryker --since:origin/main
-        continue-on-error: true  # survivors are informational, never block merge
+          # Get .cs files changed vs main that belong to the source project (not tests)
+          CHANGED=$(git diff --name-only origin/main...HEAD \
+            | grep '\.cs$' \
+            | grep -v 'Tests/' \
+            | grep -v '\.g\.cs$' \
+            | tr '\n' ',')
+          echo "files=$CHANGED" >> "$GITHUB_OUTPUT"
+          echo "Changed files: $CHANGED"
+
+      - name: Run Stryker (changed files only)
+        # Runs from FxRatesApi.Api/ so config-relative paths resolve correctly.
+        # Changed files are passed via --mutate (computed from git diff above).
+        # continue-on-error means survivors are informational and never block merge.
+        if: steps.diff.outputs.files != ''
+        run: |
+          cd FxRatesApi.Api
+          dotnet stryker --config-file Tests/FxRatesApi.Api.Tests/stryker-config.json --mutate "${{ steps.diff.outputs.files }}"
+        continue-on-error: true
 
       - name: Find mutation report
         id: report
