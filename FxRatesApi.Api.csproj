@@ -22,4 +22,11 @@
     <None Remove="Tests\**" />
   </ItemGroup>
 
+  <!-- Exclude Functions project files from the web API project compile (they live in a separate project folder) -->
+  <ItemGroup>
+    <Compile Remove="FxRatesApi.Functions\**\*.cs" />
+    <EmbeddedResource Remove="FxRatesApi.Functions\**" />
+    <None Remove="FxRatesApi.Functions\**" />
+  </ItemGroup>
+
 </Project>

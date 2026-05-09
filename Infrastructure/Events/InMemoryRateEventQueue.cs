@@ -1,6 +1,5 @@
 using System.Threading.Channels;
 using FxRatesApi.Api.Application.Events;
-using Microsoft.Extensions.Hosting;
 
 namespace FxRatesApi.Api.Infrastructure.Events;
 
