@@ -52,4 +52,20 @@ public static class SpreadCalculator
 
         return GetSpreadPercentage(bid, ask) <= maxSpreadPercent;
     }
+
+    /// <summary>
+    /// Classifies the spread as Tight, Normal, or Wide based on percentage thresholds.
+    /// </summary>
+    public static string ClassifySpread(decimal bid, decimal ask)
+    {
+        var pct = GetSpreadPercentage(bid, ask);
+
+        if (pct < 0.5m)
+            return "Tight";
+
+        if (pct < 2.0m)
+            return "Normal";
+
+        return "Wide";
+    }
 }

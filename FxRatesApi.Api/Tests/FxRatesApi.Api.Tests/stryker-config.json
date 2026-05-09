@@ -6,6 +6,7 @@
     ],
     "reporters": [
       "html",
+      "json",
       "progress"
     ],
     "mutation-level": "Standard",
